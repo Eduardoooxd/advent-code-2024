@@ -9,29 +9,36 @@ import (
 	"strings"
 )
 
+type Pair[T any] struct {
+	left, right T
+}
+
 func main() {
-	input := readInput("input.txt")
-
-	var leftValues []int
-	var rightValues []int
-
-	for _, line := range input {
-		splitValue := strings.Split(line, "   ")
-		leftInt, _ := strconv.Atoi(splitValue[0])
-		rightInt, _ := strconv.Atoi(splitValue[1])
-
-		leftValues = append(leftValues, leftInt)
-		rightValues = append(rightValues, rightInt)
+	lines := readInput("input.txt")
+	pairs, err := parseInput(lines)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing input: %v\n", err)
+		os.Exit(1)
 	}
 
-	slices.Sort(leftValues)
-	slices.Sort(rightValues)
+	leftValues := make([]int, len(pairs))
+	rightValues := make([]int, len(pairs))
 
-	sum := firstChallenge(leftValues, rightValues)
-	fmt.Println(sum)
+	for i, pair := range pairs {
+		leftValues[i] = pair.left
+		rightValues[i] = pair.right
+	}
 
-	similarity := secondChallenge(leftValues, rightValues)
-	fmt.Println(similarity)
+	sortedLeft := slices.Clone(leftValues)
+	sortedRight := slices.Clone(rightValues)
+	slices.Sort(sortedLeft)
+	slices.Sort(sortedRight)
+
+	distance := calculateDistance(sortedLeft, sortedRight)
+	similarity := calculateSimilarity(leftValues, rightValues)
+
+	fmt.Printf("Part 1 (Total Distance): %d\n", distance)
+	fmt.Printf("Part 2 (Similarity Score): %d\n", similarity)
 }
 
 func countElements(toFind int, values []int) int {
@@ -46,47 +53,82 @@ func countElements(toFind int, values []int) int {
 	return count
 }
 
-func secondChallenge(leftValues []int, rightValues []int) int {
+func calculateSimilarity(leftValues []int, rightValues []int) int {
 	similarity := 0
-	cache := make(map[int]int)
 
-	for index, _ := range leftValues {
-		leftInt := leftValues[index]
-		if cache[leftInt] == 0 {
-			numberElements := countElements(leftInt, rightValues)
-			similarity += leftInt * numberElements
+	rightFreq := make(map[int]int)
+	for _, v := range rightValues {
+		rightFreq[v]++
+	}
 
-			cache[leftInt] = numberElements
-		} else {
-			numberElements := cache[leftInt]
-			similarity += leftInt * numberElements
-		}
+	for _, v := range leftValues {
+		similarity += v * rightFreq[v]
 	}
 
 	return similarity
 }
 
-func firstChallenge(leftValues []int, rightValues []int) int {
+// Calculate absolute difference
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+func calculateDistance(leftValues, rightValues []int) int {
 	sum := 0
-
-	for index, _ := range leftValues {
-		leftInt := leftValues[index]
-		rightInt := rightValues[index]
-
-		if leftInt > rightInt {
-			sum += leftInt - rightInt
-		} else {
-			sum += rightInt - leftInt
-		}
+	for i := range leftValues {
+		sum += abs(leftValues[i] - rightValues[i])
 	}
 	return sum
+}
+
+type ParseError struct {
+	line string
+	err  error
+}
+
+func (e *ParseError) Error() string {
+	return fmt.Sprintf("failed to parse line %q: %v", e.line, e.err)
+}
+
+func parseInput(lines []string) ([]Pair[int], error) {
+	// capacity = 3rd argument
+	pairs := make([]Pair[int], 0, len(lines))
+
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		parts := strings.Split(line, "   ")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid line format: %q", line)
+		}
+
+		left, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return nil, &ParseError{line, err}
+		}
+
+		right, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, &ParseError{line, err}
+		}
+
+		pairs = append(pairs, Pair[int]{left, right})
+	}
+
+	return pairs, nil
 }
 
 func readInput(filename string) []string {
 	file, err := os.Open(filename)
 
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Error opening file: %v\n", err)
+		os.Exit(1)
 	}
 	defer file.Close()
 
@@ -95,6 +137,11 @@ func readInput(filename string) []string {
 
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
+		os.Exit(1)
 	}
 
 	return lines
