@@ -29,6 +29,41 @@ func main() {
 
 	sum := firstChallenge(leftValues, rightValues)
 	fmt.Println(sum)
+
+	similarity := secondChallenge(leftValues, rightValues)
+	fmt.Println(similarity)
+}
+
+func countElements(toFind int, values []int) int {
+	count := 0
+
+	for index, _ := range values {
+		if values[index] == toFind {
+			count++
+		}
+	}
+
+	return count
+}
+
+func secondChallenge(leftValues []int, rightValues []int) int {
+	similarity := 0
+	cache := make(map[int]int)
+
+	for index, _ := range leftValues {
+		leftInt := leftValues[index]
+		if cache[leftInt] == 0 {
+			numberElements := countElements(leftInt, rightValues)
+			similarity += leftInt * numberElements
+
+			cache[leftInt] = numberElements
+		} else {
+			numberElements := cache[leftInt]
+			similarity += leftInt * numberElements
+		}
+	}
+
+	return similarity
 }
 
 func firstChallenge(leftValues []int, rightValues []int) int {
