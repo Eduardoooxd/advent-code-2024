@@ -41,18 +41,6 @@ func main() {
 	fmt.Printf("Part 2 (Similarity Score): %d\n", similarity)
 }
 
-func countElements(toFind int, values []int) int {
-	count := 0
-
-	for index, _ := range values {
-		if values[index] == toFind {
-			count++
-		}
-	}
-
-	return count
-}
-
 func calculateSimilarity(leftValues []int, rightValues []int) int {
 	similarity := 0
 
