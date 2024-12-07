@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	"aoc/utils"
 	"fmt"
 	"os"
 	"slices"
@@ -9,12 +9,8 @@ import (
 	"strings"
 )
 
-type Pair[T any] struct {
-	left, right T
-}
-
 func main() {
-	lines := readInput("input.txt")
+	lines := utils.ReadInput("input.txt")
 	pairs, err := parseInput(lines)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing input: %v\n", err)
@@ -25,8 +21,8 @@ func main() {
 	rightValues := make([]int, len(pairs))
 
 	for i, pair := range pairs {
-		leftValues[i] = pair.left
-		rightValues[i] = pair.right
+		leftValues[i] = pair.Left
+		rightValues[i] = pair.Right
 	}
 
 	sortedLeft := slices.Clone(leftValues)
@@ -81,9 +77,9 @@ func (e *ParseError) Error() string {
 	return fmt.Sprintf("failed to parse line %q: %v", e.line, e.err)
 }
 
-func parseInput(lines []string) ([]Pair[int], error) {
+func parseInput(lines []string) ([]utils.Pair[int], error) {
 	// capacity = 3rd argument
-	pairs := make([]Pair[int], 0, len(lines))
+	pairs := make([]utils.Pair[int], 0, len(lines))
 
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
@@ -95,42 +91,18 @@ func parseInput(lines []string) ([]Pair[int], error) {
 			return nil, fmt.Errorf("invalid line format: %q", line)
 		}
 
-		left, err := strconv.Atoi(parts[0])
+		Left, err := strconv.Atoi(parts[0])
 		if err != nil {
 			return nil, &ParseError{line, err}
 		}
 
-		right, err := strconv.Atoi(parts[1])
+		Right, err := strconv.Atoi(parts[1])
 		if err != nil {
 			return nil, &ParseError{line, err}
 		}
 
-		pairs = append(pairs, Pair[int]{left, right})
+		pairs = append(pairs, utils.Pair[int]{Left, Right})
 	}
 
 	return pairs, nil
-}
-
-func readInput(filename string) []string {
-	file, err := os.Open(filename)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error opening file: %v\n", err)
-		os.Exit(1)
-	}
-	defer file.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-		os.Exit(1)
-	}
-
-	return lines
 }
